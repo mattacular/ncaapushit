@@ -99,6 +99,10 @@ func applyEnvOptions() {
 func getMakefile() (string, error) {
     var makefile string
 
+    fmt.Print("Updating site repo...")
+    git(gitCommands["update"], siteRepoOpt)
+    fmt.Print(" complete\n")
+
     siteFiles, err := ioutil.ReadDir(siteRepoOpt)
     foundMakefile := false
 
