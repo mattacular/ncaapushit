@@ -38,6 +38,7 @@ var (
     siteRepoOpt string
     siteMakeOpt string
     topicOpt    string
+    noModuleOpt bool
     // cwd or overridden module dir
     cwd string
 )
@@ -62,6 +63,9 @@ var optionsMap = nestedMap{
     },
     "topic": {
         "usage": "If you have already merged your topic branch, you must provide the name of it (eg. NCAA-31337), otherwise the current branch will be used.",
+    },
+    "no-module": {
+        "usage":   "If you are working on a repo that is merely a container for other modules (ie. has no *.module file of its own), use this option.",
     },
 }
 
@@ -141,31 +145,33 @@ func getModule() (string, error) {
     cwdParts := strings.Split(cwd, string(os.PathSeparator))
     module = string(cwdParts[len(cwdParts)-1])
 
-    // verify that the dir exists and has a *.module within
-    files, readErr := ioutil.ReadDir(cwd)
-    foundModule := false
+    if noModuleOpt != true {
+        // verify that the dir exists and has a *.module within
+        files, readErr := ioutil.ReadDir(cwd)
+        foundModule := false
 
-    if readErr != nil {
-        return "", &pushError{("There was a problem reading the module directory @ " + cwd + "\n\nPlease change directory to the top-level of the module repo you want to act on (ie. where the *.module file is located) and try again.\nYou may provide a full path using the '--module' option of this utility.\n")}
-    }
-
-    // change to the provided directory if we're not already there
-    if moduleOpt != "$PWD" {
-        os.Chdir(cwd)
-    }
-
-    for _, file := range files {
-        if seekModule := module + ".module"; seekModule == file.Name() {
-            foundModule = true
-            break
+        if readErr != nil {
+            return "", &pushError{("There was a problem reading the module directory @ " + cwd + "\n\nPlease change directory to the top-level of the module repo you want to act on (ie. where the *.module file is located) and try again.\nYou may provide a full path using the '--module' option of this utility.\n")}
         }
-    }
 
-    if !foundModule {
-        return "", &pushError{("Could not locate module '" + module + "' @ " + cwd)}
-    }
+        // change to the provided directory if we're not already there
+        if moduleOpt != "$PWD" {
+            os.Chdir(cwd)
+        }
 
-    fmt.Println("Module repo:", module)
+        for _, file := range files {
+            if seekModule := module + ".module"; seekModule == file.Name() {
+                foundModule = true
+                break
+            }
+        }
+
+        if !foundModule {
+            return "", &pushError{("Could not locate *.module for '" + module + "' @ " + cwd)}
+        }
+
+        fmt.Println("Module repo:", module)
+    }
 
     return module, nil
 }
@@ -208,7 +214,7 @@ func getVersions() (string, string, error) {
         splitVersion  []string
     )
 
-    fmt.Print("\t`-- updating...")
+    fmt.Print("Updating module repo...")
     git(gitCommands["update"], cwd)
     fmt.Print(" complete\n")
 
@@ -338,6 +344,9 @@ func init() {
 
     // option: --topic
     flag.StringVar(&topicOpt, "topic", optionsMap["topic"]["default"], optionsMap["topic"]["usage"])
+
+    // option: --no-module
+    flag.BoolVar(&noModuleOpt, "no-module", false, optionsMap["no-module"]["usage"])
 }
 
 func main() {
