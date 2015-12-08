@@ -39,6 +39,7 @@ var (
     siteMakeOpt string
     topicOpt    string
     noModuleOpt bool
+    noPushOpt   bool
     // cwd or overridden module dir
     cwd string
 )
@@ -66,6 +67,9 @@ var optionsMap = nestedMap{
     },
     "no-module": {
         "usage":   "If you are working on a repo that is merely a container for other modules (ie. has no *.module file of its own), use this option.",
+    },
+    "no-push": {
+        "usage":   "If you want to bypass pushing your commit up (in order to push multiple changes at once) use this.",
     },
 }
 
@@ -322,8 +326,10 @@ func pushUpdatedMakefile(outFile *[]string, commitMsg string, taggingComplete ch
     // wait for tagging to finish before pushing
     <-taggingComplete
 
-    git(gitCommands["pushit"], siteRepoOpt)
-
+    // push up the changes, unless we're told not to
+    if noPushOpt != true {
+        git(gitCommands["pushit"], siteRepoOpt)
+    }
     return nil
 }
 
@@ -347,6 +353,9 @@ func init() {
 
     // option: --no-module
     flag.BoolVar(&noModuleOpt, "no-module", false, optionsMap["no-module"]["usage"])
+
+    // option: --no-push
+    flag.BoolVar(&noPushOpt, "no-push", false, optionsMap["no-push"]["usage"])
 }
 
 func main() {
@@ -420,5 +429,9 @@ func main() {
         return
     }
 
-    fmt.Println("\nPush completed successfully!\nYour new version will build to the staging environment momentarily.")
+    if noPushOpt == true {
+        fmt.Println("\nPush completed successfully!\nNothing has been pushed to staging yet though.")
+    } else {
+        fmt.Println("\nCommit completed successfully!\nYour new version will build to the staging environment momentarily.")
+    }
 }
