@@ -17,7 +17,7 @@ export NCAA_BARCA_SITE_MAKEFILE=barcelona.make
 
 Usage
 =====
-The ```pushit``` utility is expected to be used in the following manner:
+The ```ncaapushit``` utility is expected to be used in the following manner:
 
 1. Merge your pull request (NCAA-XXXX -> master) in the web interface
 2. In your terminal, change directories to your local repo
