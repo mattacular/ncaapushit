@@ -190,7 +190,7 @@ func git(command gitc, dir string) []byte {
 }
 
 // tagVersion creates the new tag in Git and pushes it to site repo (origin)
-func tagVersion(version string, complete chan bool) {
+func tagVersion(version string) bool {
     // if module repo was not checked out to master already, perform clean up and prepare for tagging
     if topicOpt != "master" {
         git(gitCommands["coMaster"], cwd)        // checkout master
@@ -202,7 +202,7 @@ func tagVersion(version string, complete chan bool) {
     git(gitc{"tag", "v" + version}, cwd)
     git(gitCommands["pushtags"], cwd)
 
-    complete <- true
+    return true
 }
 
 // getVersions determines the latest module version (via Git) and bumps the appropriate semver column
@@ -300,10 +300,7 @@ func getUpdatedMakefile(makefile, module, newVersion, latest string) ([]string, 
 }
 
 // pushUpdatedMakefile writes the new makefile contents to disk, commits the change, and pushes it up to the site repo
-func pushUpdatedMakefile(outFile *[]string, commitMsg string, taggingComplete chan bool) error {
-    fmt.Println(commitMsg)
-    fmt.Println("\t`-- committed changes with message")
-
+func pushUpdatedMakefile(outFile *[]string, commitMsg string) error {
     // make sure this repo is up to date and checked out to master
     git(gitCommands["update"], siteRepoOpt)
     git(gitCommands["coMaster"], siteRepoOpt)
@@ -319,8 +316,8 @@ func pushUpdatedMakefile(outFile *[]string, commitMsg string, taggingComplete ch
     // commit the changes and pushit
     git(gitc{"commit", siteMakeOpt, "-m", commitMsg}, siteRepoOpt)
 
-    // wait for tagging to finish before pushing
-    <-taggingComplete
+    fmt.Println(commitMsg)
+    fmt.Println("\t`-- committed changes with message")
 
     git(gitCommands["pushit"], siteRepoOpt)
 
@@ -358,8 +355,6 @@ func main() {
         outFile    []string
         err        error
     )
-
-    taggingComplete := make(chan bool)
 
     flag.Parse()      // handle options passed in via command-line
     applyEnvOptions() // try environment variables for missing options
@@ -403,7 +398,7 @@ func main() {
     }
 
     // while the rest proceeds, we can go ahead and start pushing the new tag up from the module repo
-    go tagVersion(newVersion, taggingComplete)
+    tagVersion(newVersion)
 
     outFile, err = getUpdatedMakefile(makefile, module, newVersion, latest)
 
@@ -413,7 +408,7 @@ func main() {
     }
 
     commitMsg := fmt.Sprintf("\n%s %s -> %s", topicOpt, module, newVersion)
-    err = pushUpdatedMakefile(&outFile, commitMsg, taggingComplete) // pass the tagging channel to make sure this stays in sync
+    err = pushUpdatedMakefile(&outFile, commitMsg)
 
     if err != nil {
         fmt.Println(err)
