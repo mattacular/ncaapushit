@@ -15,6 +15,14 @@ export NCAA_BARCA_SITE_REPO_PATH=/Users/mstills/Repos/barcelona/master
 export NCAA_BARCA_SITE_MAKEFILE=barcelona.make
 ```
 
+Installation
+============
+Once you've cloned the repo, change directory to it and compile the program:
+
+1. ```$ go build ncaapushit.go``` (make sure you have [https://golang.org/dl/](Go installed already))
+2. Add it to your PATH or run "./ncaapushit" to run the utility.
+3. Optionally set the environment variables described above.
+
 Usage
 =====
 The ```ncaapushit``` utility is expected to be used in the following manner:
